@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import Peer, { DataConnection } from 'peerjs'
+import Peer, { type DataConnection } from 'peerjs'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
 import ClipboardJS from 'clipboard'
 import QRCode from 'qrcode'
