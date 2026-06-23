@@ -2,15 +2,15 @@
   <div class="home-view">
     <h1>P2P Share</h1>
     <button class="btn start-btn" @click="start" v-if="status === 'default' || status === 'connecting'">
-      <span class="material-symbols-outlined loading-icon" v-if="status === 'connecting'">progress_activity</span>
+      <MaterialIcon name="progress_activity" class="loading-icon" v-if="status === 'connecting'" />
       开始
     </button>
     <template v-if="status === 'connected'">
       <div class="local-info">
         <div class="local-peer-id">
           <input id="local-peer-id-content" :value="state.peerId" readonly />
-          <button class="btn qrcode-btn" title="显示二维码" ref="qrcodeTrigger" @click="qrcodeVisible=true"><span class="material-symbols-outlined qrcode-icon">qr_code</span></button>
-          <button class="btn copy-btn" data-clipboard-target="#local-peer-id-content" title="复制到剪切板"><span class="material-symbols-outlined qrcode-icon">content_copy</span></button>
+          <button class="btn qrcode-btn" title="显示二维码" ref="qrcodeTrigger" @click="qrcodeVisible=true"><MaterialIcon name="qr_code" class="qrcode-icon" /></button>
+          <button class="btn copy-btn" data-clipboard-target="#local-peer-id-content" title="复制到剪切板"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
         </div>
         <button class="btn close-btn" @click="stop">停止</button>
       </div>
@@ -21,7 +21,7 @@
       </div>
       <div class="card" v-if="remotes.length > 1">
         <div class="card-header">
-          <h3 class="card-title">已连接的设备</h3>
+          <h3 class="card-title">设备列表</h3>
         </div>
         <div class="card-body">
           <ul class="remote-list" v-if="remotes.length">
@@ -31,8 +31,11 @@
               :class="{disabled: item.status === 'disconnected', selected: selectedConnection === item.connection}"
               @click="selectedConnection = item.connection"
             >
-              <p class="remote-info">{{ item.connection.peer }}</p>
-              <p class="remote-status" :class="item.status">{{ item.status }}</p>
+              <p class="remote-info">
+                {{ item.connection.peer }}
+                <span class="connection-status" :class="item.status">{{ statusLabel(item.status) }}</span>
+                <span class="link-type" :class="item.linkType" v-if="item.status === 'connected'">{{ linkTypeLabel(item.linkType) }}</span>
+              </p>
             </li>
           </ul>
           <div class="empty-list" v-else>暂无已连接的设备</div>
@@ -41,7 +44,11 @@
       <div class="card send-section" v-if="selectedConnection">
         <div class="card-header">
           <h3 class="card-title">{{ selectedConnection.peer }}</h3>
-          <p class="card-subtitle">{{ selectedConnection.metadata?.title }}</p>
+          <p class="card-subtitle">
+            <span>{{ selectedConnection.metadata?.title }}</span>
+            <span class="connection-status" :class="selectedRemoteStatus" v-if="selectedRemoteStatus">{{ statusLabel(selectedRemoteStatus) }}</span>
+            <span class="link-type" :class="selectedLinkType" v-if="selectedRemoteStatus === 'connected' && selectedLinkType">{{ linkTypeLabel(selectedLinkType) }}</span>
+          </p>
         </div>
         <div class="card-body">
           <div class="messages-area">
@@ -54,14 +61,14 @@
                 <div class="message-content-text" v-if="message.content.type === 'text'">{{ message.content.text }}</div>
                 <div class="message-content-file" v-else>
                   <div class="file-thumbnail-wrapper">
-                    <span class="material-symbols-outlined file-thumbnail-icon">draft</span>
+                    <MaterialIcon name="draft" class="file-thumbnail-icon" />
                   </div>
                   <div class="file-info">
                     <div class="file-name">{{ message.content.fileName }}</div>
                     <div class="file-size">{{ formatSize(message.content.file.size) }}</div>
                   </div>
                   <div class="file-download">
-                    <span class="material-symbols-outlined" @click="download(message.content)">download_2</span>
+                    <MaterialIcon name="download_2" @click="download(message.content)" />
                   </div>
                 </div>
               </li>
@@ -72,12 +79,12 @@
             <textarea v-model="sendForm.text" placeholder="输入要发送的内容" class="send-textarea"></textarea>
             <div class="btns">
               <button class="btn select-file-btn" @click="selectFile">
-                <span class="material-symbols-outlined file-icon">attach_file</span>
+                <MaterialIcon name="attach_file" class="file-icon" />
                 选择文件
               </button>
               <button class="btn send-btn" @click="send">
                 发送
-                <span class="material-symbols-outlined send-icon">send</span>
+                <MaterialIcon name="send" class="send-icon" />
               </button>
             </div>
           </div>
@@ -110,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import MaterialIcon from '@/components/MaterialIcon.vue'
 import Peer, { type DataConnection } from 'peerjs'
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
 import ClipboardJS from 'clipboard'
@@ -154,11 +162,113 @@ const status = ref<'default' | 'connecting' | 'connected'>('default')
 const state = ref({
   peerId: ''
 })
+type LinkType = 'direct' | 'relay' | 'unknown'
 type RemoteItem = {
   connection: DataConnection,
   status: 'connecting' | 'connected' | 'disconnected',
+  linkType: LinkType,
   info?: string
 }
+
+const linkTypeLabel = (type: LinkType) => {
+  if (type === 'direct') return '直连'
+  if (type === 'relay') return '中继'
+  return '检测中'
+}
+
+const statusLabel = (status: RemoteItem['status']) => {
+  if (status === 'connecting') return '连接中'
+  if (status === 'connected') return '已连接'
+  return '已断开'
+}
+
+const CONNECT_TIMEOUT_MS = 20000
+const ICE_DISCONNECT_GRACE_MS = 5000
+
+const getRemoteStatus = (dataConnection: DataConnection) => {
+  return remotes.value.find(item => item.connection === dataConnection)?.status
+}
+
+const markRemoteByConnection = (dataConnection: DataConnection, val: Partial<RemoteItem>) => {
+  remotes.value = remotes.value.map(item => {
+    if (item.connection === dataConnection) {
+      return { ...item, ...val }
+    }
+    return item
+  })
+}
+
+const markRemoteDisconnected = (dataConnection: DataConnection) => {
+  markRemoteByConnection(dataConnection, { status: 'disconnected', info: '' })
+}
+
+const resetSession = () => {
+  remotes.value = remotes.value.map(item => {
+    if (item.status === 'connecting' || item.status === 'connected') {
+      return { ...item, status: 'disconnected', info: '' }
+    }
+    return item
+  })
+  selectedConnection.value = null
+  status.value = 'default'
+  state.value.peerId = ''
+}
+
+const detectLinkType = async (pc: RTCPeerConnection): Promise<LinkType> => {
+  try {
+    const stats = await pc.getStats()
+    let localType: string | undefined
+    let remoteType: string | undefined
+
+    stats.forEach((report) => {
+      if (report.type === 'transport' && 'selectedCandidatePairId' in report && report.selectedCandidatePairId) {
+        const pair = stats.get(report.selectedCandidatePairId as string)
+        if (pair && 'localCandidateId' in pair && 'remoteCandidateId' in pair) {
+          const local = stats.get(pair.localCandidateId as string)
+          const remote = stats.get(pair.remoteCandidateId as string)
+          if (local && 'candidateType' in local) localType = local.candidateType as string
+          if (remote && 'candidateType' in remote) remoteType = remote.candidateType as string
+        }
+      }
+      if (report.type === 'candidate-pair' && 'state' in report && report.state === 'succeeded') {
+        if ('localCandidateId' in report && report.localCandidateId) {
+          const local = stats.get(report.localCandidateId as string)
+          if (local && 'candidateType' in local) localType = local.candidateType as string
+        }
+        if ('remoteCandidateId' in report && report.remoteCandidateId) {
+          const remote = stats.get(report.remoteCandidateId as string)
+          if (remote && 'candidateType' in remote) remoteType = remote.candidateType as string
+        }
+      }
+    })
+
+    if (localType === 'relay' || remoteType === 'relay') return 'relay'
+    if (localType || remoteType) return 'direct'
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
+
+const updateLinkType = async (dataConnection: DataConnection) => {
+  const linkType = await detectLinkType(dataConnection.peerConnection)
+  remotes.value = remotes.value.map(item => {
+    if (item.connection === dataConnection) {
+      return { ...item, linkType }
+    }
+    return item
+  })
+}
+
+const selectedLinkType = computed(() => {
+  if (!selectedConnection.value) return null
+  return remotes.value.find(item => item.connection === selectedConnection.value)?.linkType ?? null
+})
+
+const selectedRemoteStatus = computed(() => {
+  if (!selectedConnection.value) return null
+  return remotes.value.find(item => item.connection === selectedConnection.value)?.status ?? null
+})
 const remotes = shallowRef<RemoteItem[]>([])
 const qrcode = ref('')
 const qrcodeVisible = ref(false)
@@ -214,7 +324,7 @@ const createPeer = () => {
 
   peer.on('disconnected', (id) => {
     console.warn('disconnected', id)
-    status.value = 'default'
+    resetSession()
   })
 
   peer.on('connection', (dataConnection) => {
@@ -241,12 +351,14 @@ const createPeer = () => {
     showToast(err.message)
     if (err.type === 'peer-unavailable') {
       const peerId = err.message.match(/Could\snot\sconnect\sto\speer\s(\S+)/)?.[1]
-      remotes.value = remotes.value.map(item => {
-        if (item.connection.peer === peerId && item.status === 'connecting') {
-          return null
-        }
-        return item
-      }).filter(Boolean) as typeof remotes.value
+      if (peerId) {
+        remotes.value = remotes.value.map(item => {
+          if (item.connection.peer === peerId && item.status === 'connecting') {
+            return { ...item, status: 'disconnected', info: '' }
+          }
+          return item
+        })
+      }
       return
     }
   })
@@ -259,44 +371,80 @@ const start = () => {
 const stop = () => {
   peer?.destroy()
   peer = null
+  resetSession()
+  remotes.value = []
+  selectedConnection.value = null
 }
 
 const initDataConnection = (dataConnection: DataConnection) => {
   const exists = remotes.value.some(i => i.connection === dataConnection)
   if (!exists) {
-    remotes.value = [{ connection: dataConnection, status: dataConnection.open ? 'connected' : 'connecting' }, ...remotes.value]
+    remotes.value = [{ connection: dataConnection, status: dataConnection.open ? 'connected' : 'connecting', linkType: 'unknown' }, ...remotes.value]
   }
-  const update = (val: Partial<RemoteItem>) => {
-    remotes.value = remotes.value.map(item => {
-      if (item.connection === dataConnection) {
-        return {
-          ...item,
-          ...val
-        }
+  const update = (val: Partial<RemoteItem>) => markRemoteByConnection(dataConnection, val)
+
+  let connectTimer: ReturnType<typeof setTimeout> | undefined
+  let iceDisconnectTimer: ReturnType<typeof setTimeout> | undefined
+
+  const clearTimers = () => {
+    if (connectTimer) clearTimeout(connectTimer)
+    if (iceDisconnectTimer) clearTimeout(iceDisconnectTimer)
+    connectTimer = undefined
+    iceDisconnectTimer = undefined
+  }
+
+  if (!dataConnection.open) {
+    connectTimer = setTimeout(() => {
+      if (getRemoteStatus(dataConnection) === 'connecting') {
+        markRemoteDisconnected(dataConnection)
+        showToast('连接超时')
       }
-      return item
-    })
+    }, CONNECT_TIMEOUT_MS)
   }
+
   dataConnection.on('open', () => {
+    clearTimers()
     console.warn('dataConnection onOpen', dataConnection)
     if (!selectedConnection.value) {
       selectedConnection.value = dataConnection
     }
     update({ status: 'connected', info: '' })
+    updateLinkType(dataConnection)
   })
   dataConnection.on('close', () => {
+    clearTimers()
     console.warn('dataConnection onClose')
-    if (dataConnection.peer === selectedConnection.value?.peer) {
-      selectedConnection.value = null
-    }
-    update({ status: 'disconnected', info: '' })
+    markRemoteDisconnected(dataConnection)
   })
   dataConnection.on('error', (err) => {
+    clearTimers()
     console.error('dataConnection onError', err)
     showToast(err.message)
+    markRemoteDisconnected(dataConnection)
   })
   dataConnection.on('iceStateChanged', state => {
     console.debug('dataConnection onIceStateChanged', state)
+    if (state === 'connected' || state === 'completed') {
+      if (iceDisconnectTimer) {
+        clearTimeout(iceDisconnectTimer)
+        iceDisconnectTimer = undefined
+      }
+      updateLinkType(dataConnection)
+      return
+    }
+    if (state === 'failed' || state === 'closed') {
+      clearTimers()
+      markRemoteDisconnected(dataConnection)
+      return
+    }
+    if (state === 'disconnected' && !iceDisconnectTimer) {
+      iceDisconnectTimer = setTimeout(() => {
+        iceDisconnectTimer = undefined
+        if (getRemoteStatus(dataConnection) === 'connected') {
+          markRemoteByConnection(dataConnection, { status: 'disconnected', info: '' })
+        }
+      }, ICE_DISCONNECT_GRACE_MS)
+    }
   })
   dataConnection.on('data', data => {
     console.info('dataConnection onData', data)
@@ -312,6 +460,14 @@ const initDataConnection = (dataConnection: DataConnection) => {
 
 const connect = () => {
   if (!connectForm.value.peerId) return
+  const targetPeerId = connectForm.value.peerId
+  remotes.value = remotes.value.map(item => {
+    if (item.connection.peer === targetPeerId && item.status === 'connecting') {
+      item.connection.close()
+      return { ...item, status: 'disconnected', info: '' }
+    }
+    return item
+  })
   const ua = UAParser(navigator.userAgent)
   const title = [ua.device, ua.os, ua.browser].join(' ')
   console.warn('连接', connectForm.value.peerId)
@@ -387,7 +543,7 @@ onBeforeUnmount(() => {
   --border-radius: 2px;
 }
 .home-view {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -418,6 +574,51 @@ onBeforeUnmount(() => {
 h1 {
   text-align: center;
   margin-bottom: 16px;
+}
+
+.link-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  &.direct {
+    border-color: #2d8a2d;
+    color: #2d8a2d;
+  }
+  &.relay {
+    border-color: #b8860b;
+    color: #b8860b;
+  }
+  &.unknown {
+    opacity: 0.6;
+  }
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  &.connecting {
+    border-color: #b8860b;
+    color: #b8860b;
+  }
+  &.connected {
+    border-color: #2d8a2d;
+    color: #2d8a2d;
+  }
+  &.disconnected {
+    border-color: #999;
+    color: #999;
+  }
 }
 
 @keyframes rotation {
@@ -501,6 +702,10 @@ h1 {
     padding: 8px 16px;
     border-bottom: 1px solid var(--border-color);
     .card-subtitle {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
       font-size: 14px;
       opacity: 0.6;
       margin-top: 4px;
@@ -525,16 +730,12 @@ h1 {
     &.selected {
       background: var(--selected-bg-color);
     }
-    .remote-status {
-      margin-left: auto;
-      font-size: 14px;
-      opacity: 0.6;
-      &.connected {
-        background: green;
-        color: #fff;
-        padding: 3px 8px;
-        border-radius: var(--border-radius);
-      }
+    .remote-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      flex: 1;
     }
   }
   .remote-item + .remote-item {
