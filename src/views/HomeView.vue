@@ -425,7 +425,9 @@ h1 {
 .start-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   margin: auto;
+  min-width: 120px;
   .loading-icon {
     font-size: 16px;
     margin-right: 4px;

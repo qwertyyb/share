@@ -46,18 +46,35 @@ html, body, #app {
   --hover-bg-color: #bbbb;
   --selected-bg-color: #ccc;
   --border-radius: 2px;
+  --default-btn-text-color: #000;
+  --default-btn-bg-color: #ddd;
+  color-scheme: light dark;
 }
+
+input, textarea {
+  background: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --border-color: #333;
+    --default-btn-text-color: #000;
+    --default-btn-bg-color: #cdcdcd;
+    --selected-bg-color: #333;
+  }
+};
 
 // common
 .btn {
   border: none;
   outline: none;
-  background-color: #ddd;
+  background-color: var(--default-btn-bg-color);
   transition: background-color .2s;
   padding: 6px 12px;
   height: 36px;
   box-sizing: border-box;
   border-radius: var(--border-radius);
+  color: var(--default-btn-text-color);
   &:hover {
     background-color: #bbb;
   }
