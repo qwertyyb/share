@@ -35,11 +35,11 @@ export default {
     showQrCode: 'Show QR code',
     copy: 'Copy to clipboard',
     scanToConnect: 'Scan to connect',
-    copySuccess: 'Copied!',
-    copyFailed: 'Copy failed',
   },
   toast: {
     connectionTimeout: 'Connection timed out',
+    copySuccess: '✅ Copied!',
+    copyFailed: '❌ Copy failed',
   },
   footer: {
     githubRepo: 'GitHub repository',

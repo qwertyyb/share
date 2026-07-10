@@ -49,3 +49,13 @@ export const detectLinkType = async (pc: RTCPeerConnection): Promise<LinkType> =
   }
 }
 
+export const showToast = (content: string) => {
+  const toastEl = document.createElement('div')
+  toastEl.classList.add('toast')
+  toastEl.textContent = content
+  document.body.append(toastEl)
+  setTimeout(() => {
+    toastEl.remove()
+  }, 3000)
+}
+

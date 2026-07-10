@@ -3,7 +3,7 @@
     <div class="local-peer-id">
       <input id="local-peer-id-content" :value="peerId" readonly />
       <button class="btn qrcode-btn" :title="t('localPeer.showQrCode')" ref="qrcodeTrigger" @click="qrcodeVisible=true"><MaterialIcon name="qr_code" class="qrcode-icon" /></button>
-      <button class="btn copy-btn" data-clipboard-target="#local-peer-id-content" :title="t('localPeer.copy')"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
+      <button class="btn copy-btn" :data-clipboard-text="peerId" :title="t('localPeer.copy')"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
     </div>
     <button class="btn close-btn" @click="$emit('stop')">{{ t('action.stop') }}</button>
     <div class="qrcode-popover"
@@ -34,11 +34,10 @@
 <script setup lang="ts">
 import { arrow, offset, shift, useFloating } from '@floating-ui/vue';
 import { onClickOutside } from '@vueuse/core';
-import { onBeforeUnmount, onMounted, ref, useTemplateRef, watchEffect } from 'vue';
+import { ref, useTemplateRef, watchEffect } from 'vue';
 import { useI18n } from 'vue-i18n';
 import MaterialIcon from '@/components/MaterialIcon.vue'
 import QRCode from 'qrcode'
-import ClipboardJS from 'clipboard';
 
 const { t } = useI18n()
 
@@ -70,22 +69,6 @@ watchEffect(async () => {
   })
 })
 
-
-let clipboard: ClipboardJS
-onMounted(() => {
-  clipboard = new ClipboardJS('.copy-btn')
-  clipboard.on('success', () => {
-    alert(t('localPeer.copySuccess'))
-  })
-  clipboard.on('error', () => {
-    alert(t('localPeer.copyFailed'))
-  })
-})
-
-onBeforeUnmount(() => {
-  clipboard.destroy()
-})
-
 </script>
 
 <style lang="scss" scoped>
@@ -99,8 +82,10 @@ onBeforeUnmount(() => {
   border-radius: var(--border-radius);
   background: rgb(192, 0, 0);
   color: #fff;
-  &:hover {
-    background: rgb(141, 0, 0);
+  @media (any-hover: hover) {
+    &:hover {
+      background: rgb(141, 0, 0);
+    }
   }
 }
 .local-peer-id {

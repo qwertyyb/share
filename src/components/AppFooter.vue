@@ -82,8 +82,10 @@ const currentLocale = computed({
   transition: opacity 0.2s;
 }
 
-.github-link:hover {
-  opacity: 1;
+@media (any-hover: hover) {
+  .github-link:hover {
+    opacity: 1;
+  }
 }
 
 .github-icon {

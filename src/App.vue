@@ -75,13 +75,15 @@ input, textarea {
   box-sizing: border-box;
   border-radius: var(--border-radius);
   color: var(--default-btn-text-color);
-  &:hover {
-    background-color: #bbb;
-  }
   & + & {
     border-left: 1px solid var(--border-color);
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+  }
+  @media (any-hover: hover) {
+    &:hover {
+      background-color: #bbb;
+    }
   }
 }
 

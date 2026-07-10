@@ -35,11 +35,11 @@ export default {
     showQrCode: 'QRコードを表示',
     copy: 'クリップボードにコピー',
     scanToConnect: 'スキャンして接続',
-    copySuccess: 'コピーしました',
-    copyFailed: 'コピーに失敗しました',
   },
   toast: {
     connectionTimeout: '接続がタイムアウトしました',
+    copySuccess: '✅ コピーしました',
+    copyFailed: '❌ コピーに失敗しました',
   },
   footer: {
     githubRepo: 'GitHub リポジトリ',

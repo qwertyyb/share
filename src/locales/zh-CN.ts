@@ -35,11 +35,11 @@ export default {
     showQrCode: '显示二维码',
     copy: '复制到剪切板',
     scanToConnect: '扫码连接',
-    copySuccess: '复制成功！',
-    copyFailed: '复制失败',
   },
   toast: {
     connectionTimeout: '连接超时',
+    copySuccess: '✅ 复制成功！',
+    copyFailed: '❌ 复制失败',
   },
   footer: {
     githubRepo: 'GitHub 仓库',

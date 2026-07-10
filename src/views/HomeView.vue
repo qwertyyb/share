@@ -40,19 +40,26 @@
                 :key="index"
                 :class="message.role"
               >
-                <div class="message-content-text" v-if="message.content.type === 'text'">{{ message.content.text }}</div>
-                <div class="message-content-file" v-else>
-                  <div class="file-thumbnail-wrapper">
-                    <MaterialIcon name="draft" class="file-thumbnail-icon" />
-                  </div>
-                  <div class="file-info">
-                    <div class="file-name">{{ message.content.fileName }}</div>
-                    <div class="file-size">{{ formatSize(message.content.file.size) }}</div>
-                  </div>
-                  <div class="file-download">
-                    <MaterialIcon name="download_2" @click="download(message.content)" />
+                <div class="message-content-wrapper">
+                  <div class="message-content-text" v-if="message.content.type === 'text'">{{ message.content.text }}</div>
+                  <div class="message-content-file" v-else>
+                    <div class="file-thumbnail-wrapper">
+                      <MaterialIcon name="draft" class="file-thumbnail-icon" />
+                    </div>
+                    <div class="file-info">
+                      <div class="file-name">{{ message.content.fileName }}</div>
+                      <div class="file-size">{{ formatSize(message.content.file.size) }}</div>
+                    </div>
+                    <div class="file-download">
+                      <MaterialIcon name="download_2" @click="download(message.content)" />
+                    </div>
                   </div>
                 </div>
+                <ul class="message-item-action-list" v-if="message.content.type === 'text'">
+                  <list class="message-item-action-item">
+                    <button class="btn copy-text-action" :data-clipboard-text="message.content.text"><MaterialIcon name="content_copy" /></button>
+                  </list>
+                </ul>
               </li>
             </ul>
             <div class="empty-list" v-else>{{ t('message.empty') }}</div>
@@ -81,10 +88,11 @@ import MaterialIcon from '@/components/MaterialIcon.vue'
 import LocalPeerInfo from '@/components/LocalPeerInfo.vue'
 import RemotePeerList from '@/components/RemotePeerList.vue'
 import Peer, { type DataConnection } from 'peerjs'
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UAParser } from 'ua-parser-js'
-import { detectLinkType, formatSize, type LinkType } from '@/utils'
+import { detectLinkType, formatSize, showToast, type LinkType } from '@/utils'
+import ClipboardJS from 'clipboard'
 
 const { t } = useI18n()
 
@@ -179,16 +187,6 @@ const addMessage = (peerId: string, role: 'me' | 'other', content: { type: 'text
     messages.value[peerId] = []
   }
   messages.value[peerId].push({ role, content })
-}
-
-const showToast = (content: string) => {
-  const toastEl = document.createElement('div')
-  toastEl.classList.add('toast')
-  toastEl.textContent = content
-  document.body.append(toastEl)
-  setTimeout(() => {
-    toastEl.remove()
-  }, 3000)
 }
 
 const createPeer = () => {
@@ -395,11 +393,25 @@ const download = (message: { file: File }) => {
   URL.revokeObjectURL(url);
 }
 
+let clipboard: ClipboardJS
+
 onMounted(() => {
   if (connectForm.value.peerId) {
     createPeer()
   }
+  clipboard = new ClipboardJS('[data-clipboard-text]')
+  clipboard.on('error', () => {
+    showToast(t('toast.copyFailed'))
+  })
+  clipboard.on('success', () => {
+    showToast(t('toast.copySuccess'))
+  })
 })
+
+onBeforeUnmount(() => {
+  clipboard.destroy()
+})
+
 </script>
 
 <style lang="scss" scoped>
@@ -526,15 +538,20 @@ h1 {
     max-height: 600px;
     overflow: auto;
     .message-item {
-      border-radius: var(--border-radius);
-      border: 1px solid var(--border-color);
-      width: fit-content;
-      padding: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
       font-size: 14px;
+      width: fit-content;
       max-width: 80%;
       &.me {
         margin-left: auto;
+        .message-item-action-list {
+          justify-content: end;
+        }
+      }
+      .message-content-wrapper {
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        padding: 8px;
       }
       .message-content-file {
         display: flex;
@@ -565,13 +582,24 @@ h1 {
           display: flex;
           align-items: center;
           justify-content: center;
-          &:hover {
-            background: var(--hover-bg-color);
+          @media (any-hover: hover) {
+            &:hover {
+              background: var(--hover-bg-color);
+            }
           }
         }
       }
       .message-content-text {
         word-break: break-all;
+      }
+      .message-item-action-list {
+        margin-top: 4px;
+        display: flex;
+      }
+      .copy-text-action {
+        height: 28px;
+        padding: 0;
+        width: 28px;
       }
     }
   }
