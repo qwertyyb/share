@@ -770,6 +770,7 @@ h1 {
       padding: 8px;
       margin-bottom: 12px;
       font-size: 14px;
+      max-width: 80%;
       &.me {
         margin-left: auto;
       }
@@ -806,6 +807,9 @@ h1 {
             background: var(--hover-bg-color);
           }
         }
+      }
+      .message-content-text {
+        word-break: break-all;
       }
     }
   }
