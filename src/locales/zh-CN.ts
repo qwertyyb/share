@@ -12,6 +12,7 @@ export default {
   placeholder: {
     peerId: '请输入对方 Peer ID',
     message: '输入要发送的内容',
+    faceToFaceConnectPlaceholder: '请输入面对面连接码',
   },
   device: {
     list: '设备列表',

@@ -12,6 +12,7 @@ export default {
   placeholder: {
     peerId: 'Enter peer ID',
     message: 'Type a message…',
+    faceToFaceConnectPlaceholder: 'Enter face to face connect code',
   },
   device: {
     list: 'Devices',

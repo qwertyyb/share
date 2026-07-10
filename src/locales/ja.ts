@@ -12,6 +12,7 @@ export default {
   placeholder: {
     peerId: '相手の Peer ID を入力',
     message: '送信する内容を入力…',
+    faceToFaceConnectPlaceholder: '面対面接続コードを入力',
   },
   device: {
     list: 'デバイス一覧',

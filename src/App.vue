@@ -48,6 +48,7 @@ html, body, #app {
   --border-radius: 2px;
   --default-btn-text-color: #000;
   --default-btn-bg-color: #ddd;
+  --disabled-bg-color: #f5f5f5;
   color-scheme: light dark;
 }
 
@@ -61,6 +62,7 @@ input, textarea {
     --default-btn-text-color: #000;
     --default-btn-bg-color: #cdcdcd;
     --selected-bg-color: #333;
+    --disabled-bg-color: #333;
   }
 };
 
@@ -80,9 +82,26 @@ input, textarea {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
   }
+  &[disabled] {
+    background-color: var(--disabled-bg-color);
+    color: #999;
+    cursor: not-allowed;
+  }
   @media (any-hover: hover) {
-    &:hover {
+    &:not([disabled]):hover {
       background-color: #bbb;
+    }
+  }
+
+  &.danger-btn {
+    margin-left: 8px;
+    border-radius: var(--border-radius);
+    background: rgb(192, 0, 0);
+    color: #fff;
+    @media (any-hover: hover) {
+      &:hover {
+        background: rgb(141, 0, 0);
+      }
     }
   }
 }

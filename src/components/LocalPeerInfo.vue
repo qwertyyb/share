@@ -5,7 +5,7 @@
       <button class="btn qrcode-btn" :title="t('localPeer.showQrCode')" ref="qrcodeTrigger" @click="qrcodeVisible=true"><MaterialIcon name="qr_code" class="qrcode-icon" /></button>
       <button class="btn copy-btn" :data-clipboard-text="peerId" :title="t('localPeer.copy')"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
     </div>
-    <button class="btn close-btn" @click="$emit('stop')">{{ t('action.stop') }}</button>
+    <button class="btn danger-btn" @click="$emit('stop')">{{ t('action.stop') }}</button>
     <div class="qrcode-popover"
       :style="floatingStyles"
       v-if="qrcodeVisible"
@@ -76,17 +76,6 @@ watchEffect(async () => {
   display: flex;
   align-items: center;
   margin-bottom: 16px;
-}
-.close-btn {
-  margin-left: 8px;
-  border-radius: var(--border-radius);
-  background: rgb(192, 0, 0);
-  color: #fff;
-  @media (any-hover: hover) {
-    &:hover {
-      background: rgb(141, 0, 0);
-    }
-  }
 }
 .local-peer-id {
   display: flex;
