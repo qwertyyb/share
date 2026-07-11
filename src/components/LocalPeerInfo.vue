@@ -1,32 +1,37 @@
 <template>
-  <div class="local-info">
-    <div class="local-peer-id">
-      <input id="local-peer-id-content" :value="peerId" readonly />
-      <button class="btn qrcode-btn" :title="t('localPeer.showQrCode')" ref="qrcodeTrigger" @click="qrcodeVisible=true"><MaterialIcon name="qr_code" class="qrcode-icon" /></button>
-      <button class="btn copy-btn" :data-clipboard-text="peerId" :title="t('localPeer.copy')"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
+  <div class="local-peer-info">
+    <div class="row">
+      <h3 class="title">{{ t('localPeer.title') }}</h3>
     </div>
-    <button class="btn danger-btn" @click="$emit('stop')">{{ t('action.stop') }}</button>
-    <div class="qrcode-popover"
-      :style="floatingStyles"
-      v-if="qrcodeVisible"
-      ref="qrcodePopover">
-      <div class="arrow"
-        ref="qrcodePopoverArrow"
-        :style="{
-          position: 'absolute',
-          left:
-            middlewareData.arrow?.x != null
-              ? `${middlewareData.arrow.x}px`
-              : '',
-          top:
-            middlewareData.arrow?.y != null
-              ? `${middlewareData.arrow.y}px`
-              : '',
-        }"
-      >
+    <div class="local-info">
+      <div class="local-peer-id">
+        <input id="local-peer-id-content" :value="peerId" readonly />
+        <button class="btn qrcode-btn" :title="t('localPeer.showQrCode')" ref="qrcodeTrigger" @click="qrcodeVisible=true"><MaterialIcon name="qr_code" class="qrcode-icon" /></button>
+        <button class="btn copy-btn" :data-clipboard-text="peerId" :title="t('localPeer.copy')"><MaterialIcon name="content_copy" class="qrcode-icon" /></button>
       </div>
-      <img :src="qrcode" alt="" class="qrcode">
-      <h5 class="scan-tip">{{ t('localPeer.scanToConnect') }}</h5>
+      <button class="btn danger-btn" @click="$emit('stop')">{{ t('action.stop') }}</button>
+      <div class="qrcode-popover"
+        :style="floatingStyles"
+        v-if="qrcodeVisible"
+        ref="qrcodePopover">
+        <div class="arrow"
+          ref="qrcodePopoverArrow"
+          :style="{
+            position: 'absolute',
+            left:
+              middlewareData.arrow?.x != null
+                ? `${middlewareData.arrow.x}px`
+                : '',
+            top:
+              middlewareData.arrow?.y != null
+                ? `${middlewareData.arrow.y}px`
+                : '',
+          }"
+        >
+        </div>
+        <img :src="qrcode" alt="" class="qrcode">
+        <h5 class="scan-tip">{{ t('localPeer.scanToConnect') }}</h5>
+      </div>
     </div>
   </div>
 </template>
@@ -72,6 +77,13 @@ watchEffect(async () => {
 </script>
 
 <style lang="scss" scoped>
+.row {
+  margin-bottom: 8px;
+}
+.title {
+  font-size: 16px;
+  font-weight: 500;
+}
 .local-info {
   display: flex;
   align-items: center;

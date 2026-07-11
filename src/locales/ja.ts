@@ -4,6 +4,7 @@ export default {
   },
   faceToFaceConnect: {
     title: '面対面接続',
+    description: '面対面接続双方は同じ接続コードを入力し、位置情報の許可を与える必要があります。',
   },
   action: {
     start: '開始',
@@ -38,9 +39,13 @@ export default {
     unknown: '検出中',
   },
   localPeer: {
+    title: '私の情報',
     showQrCode: 'QRコードを表示',
     copy: 'クリップボードにコピー',
     scanToConnect: 'スキャンして接続',
+  },
+  connectOtherPeer: {
+    title: '接続',
   },
   toast: {
     connectionTimeout: '接続がタイムアウトしました',

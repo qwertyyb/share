@@ -4,6 +4,7 @@ export default {
   },
   faceToFaceConnect: {
     title: 'Face to face connect',
+    description: 'Both parties need to enter the same connection code and grant location permission to establish a connection.',
   },
   action: {
     start: 'Start',
@@ -38,9 +39,13 @@ export default {
     unknown: 'Detecting',
   },
   localPeer: {
+    title: 'My information',
     showQrCode: 'Show QR code',
     copy: 'Copy to clipboard',
     scanToConnect: 'Scan to connect',
+  },
+  connectOtherPeer: {
+    title: 'Connect',
   },
   toast: {
     connectionTimeout: 'Connection timed out',

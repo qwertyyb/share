@@ -4,6 +4,7 @@ export default {
   },
   faceToFaceConnect: {
     title: '面对面连接',
+    description: '面对面连接双方输入相同的连接码，并授予位置权限，才能建立连接。',
   },
   action: {
     start: '开始',
@@ -38,9 +39,13 @@ export default {
     unknown: '检测中',
   },
   localPeer: {
+    title: '我的信息',
     showQrCode: '显示二维码',
     copy: '复制到剪切板',
     scanToConnect: '扫码连接',
+  },
+  connectOtherPeer: {
+    title: '连接',
   },
   toast: {
     connectionTimeout: '连接超时',

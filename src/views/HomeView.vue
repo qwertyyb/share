@@ -13,6 +13,9 @@
     <main class="view-main" v-if="status === 'connected'">
       <section class="menu-section" v-show="menuOpened">
         <LocalPeerInfo :peer-id="state.peerId" @stop="stop" />
+        <div class="row">
+          <h3 class="title">{{ t('connectOtherPeer.title') }}</h3>
+        </div>
         <div class="connect-other input-row">
           <input type="text" class="other-peer-id-content text-input" v-model.trim="connectForm.peerId" :placeholder="t('placeholder.peerId')">
           <button class="btn connect-btn"
@@ -22,17 +25,22 @@
         </div>
         <div class="face-to-face-connect-section">
           <div class="row">
-          <h3 class="title">{{ t('faceToFaceConnect.title') }}</h3>
-          <p class="status" :class="{ enabled: state.faceToFaceEnabled }">{{ state.faceToFaceEnabled ? t('status.enabled') : t('status.disabled') }}</p>
+            <h3 class="title">{{ t('faceToFaceConnect.title') }}</h3>
+            <p class="status" :class="{ running: faceToFaceRunning }">{{ faceToFaceRunning ? t('status.enabled') : t('status.disabled') }}</p>
           </div>
-          <div class="code-connect input-row" v-if="state.faceToFaceServiceEnabled">
+          <div class="code-connect input-row" v-if="faceToFaceEnabled">
             <input type="text" class="code-connect-input text-input"
-              v-model.trim="connectForm.code"
-              :disabled="state.faceToFaceEnabled"
+              v-model.trim="faceToFaceCode"
+              :disabled="faceToFaceRunning"
               :placeholder="t('placeholder.faceToFaceConnectPlaceholder')"
             >
-            <button class="btn code-connect-btn" @click="startFaceToFaceConnect" v-if="!state.faceToFaceEnabled" :disabled="!connectForm.code">{{ t('action.connect') }}</button>
+            <button class="btn code-connect-btn" @click="startFaceToFaceConnect" v-if="!faceToFaceRunning" :disabled="!faceToFaceCode">{{ t('action.connect') }}</button>
             <button class="btn code-connect-btn danger-btn" @click="stopFaceToFaceConnect" v-else>{{ t('action.stop') }}</button>
+          </div>
+          <div class="row">
+            <p class="description">
+              {{ t('faceToFaceConnect.description') }}
+            </p>
           </div>
         </div>
         <div class="card devices-card">
@@ -113,13 +121,13 @@ import MaterialIcon from '@/components/MaterialIcon.vue'
 import LocalPeerInfo from '@/components/LocalPeerInfo.vue'
 import RemotePeerList from '@/components/RemotePeerList.vue'
 import Peer, { type DataConnection } from 'peerjs'
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { UAParser } from 'ua-parser-js'
 import { detectLinkType, formatSize, showToast, type LinkType } from '@/utils'
-import ClipboardJS from 'clipboard'
-import { checkHealth, lookup } from '@/services'
 import { useToggle } from '@vueuse/core'
+import { useFaceToFaceConnect } from '@/hooks/face-to-face-connect'
+import { useClipboard } from '@/hooks/clipboard'
 
 const { t } = useI18n()
 
@@ -132,7 +140,7 @@ const ICE_SERVERS = [
 
 const [menuOpened, toggleMenuOpened] = useToggle(true)
 
-const connectForm = ref({ peerId: new URL(location.href).searchParams.get('peerId') || '', code: new URL(location.href).searchParams.get('code') || '' })
+const connectForm = ref({ peerId: new URL(location.href).searchParams.get('peerId') || '' })
 const sendForm = ref({ text: '' })
 const selectedConnection = shallowRef<RemoteItem | null>()
 const messages = ref<Record<string, {
@@ -147,9 +155,6 @@ const selectedMessages = computed(() => {
 const status = ref<'default' | 'connecting' | 'connected'>('default')
 const state = ref({
   peerId: '',
-  faceToFaceServiceEnabled: false,
-  faceToFaceConnectCode: '',
-  faceToFaceEnabled: false,
 })
 type RemoteItem = {
   connection: DataConnection,
@@ -188,8 +193,7 @@ const resetSession = () => {
   selectedConnection.value = null
   status.value = 'default'
   state.value.peerId = ''
-  state.value.faceToFaceEnabled = false
-  state.value.faceToFaceConnectCode = ''
+  faceToFaceCode.value = ''
   stopFaceToFaceConnect()
 }
 
@@ -408,59 +412,7 @@ const connect = (peerId: string) => {
   initDataConnection(dataConnection)
 }
 
-let interval: ReturnType<typeof setTimeout> | undefined
-
-
-const faceToFaceConnectsTime = new Map<string, number>()
-
-const startFaceToFaceConnectHeartbeat = async (location: { lat: number, lng: number }) => {
-  const peers = await lookup({ peerId: state.value.peerId, code: connectForm.value.code, lat: location.lat, lng: location.lng }).catch(err => {
-    showToast(`${t('toast.faceToFaceLookupFailed')}: ${err instanceof Error ? err.message : String(err)}`)
-    throw err;
-  })
-  peers.forEach(item => {
-    // 拿到的 peers 可能已经过期了，所以需要根据 updatedAt 判断是否需要重新连接
-    const lastUpdatedAt = faceToFaceConnectsTime.get(item.peerId)
-    if (lastUpdatedAt === item.updatedAt) {
-      return
-    }
-    faceToFaceConnectsTime.set(item.peerId, item.updatedAt)
-    connect(item.peerId)
-  })
-  interval =setTimeout(startFaceToFaceConnectHeartbeat, 2 * 1000, location)
-}
-
-const stopFaceToFaceConnectHeartbeat = () => {
-  if (interval) {
-    clearTimeout(interval)
-    interval = undefined
-  }
-}
-
-const getLocation = async () => {
-  let location: GeolocationPosition | undefined
-  try {
-    location = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 }))
-  } catch (error) {
-    showToast(`${t('toast.getLocationFailed')}: ${(error as Error).message}`)
-    throw error
-  }
-  return { lat: location?.coords.latitude ?? 0, lng: location?.coords.longitude ?? 0 }
-}
-
-const startFaceToFaceConnect = async () => {
-  if (!connectForm.value.code) return
-  const location = await getLocation()
-  console.log('location', location)
-  state.value.faceToFaceEnabled = true
-  startFaceToFaceConnectHeartbeat(location)
-}
-
-const stopFaceToFaceConnect = () => {
-  stopFaceToFaceConnectHeartbeat()
-  state.value.faceToFaceEnabled = false
-  faceToFaceConnectsTime.clear()
-}
+const { enabled: faceToFaceEnabled, running: faceToFaceRunning, code: faceToFaceCode, start: startFaceToFaceConnect, stop: stopFaceToFaceConnect } = useFaceToFaceConnect(state.value.peerId, connect)
 
 const selectFile = () => {
   if (!selectedConnection.value) return;
@@ -494,27 +446,12 @@ const download = (message: { file: File }) => {
   URL.revokeObjectURL(url);
 }
 
-let clipboard: ClipboardJS
+useClipboard('[data-clipboard-text]')
 
 onMounted(() => {
   if (connectForm.value.peerId) {
     createPeer()
   }
-  clipboard = new ClipboardJS('[data-clipboard-text]')
-  clipboard.on('error', () => {
-    showToast(t('toast.copyFailed'))
-  })
-  clipboard.on('success', () => {
-    showToast(t('toast.copySuccess'))
-  })
-  checkHealth().then(enabled => {
-    state.value.faceToFaceServiceEnabled = enabled
-  })
-})
-
-onBeforeUnmount(() => {
-  clipboard.destroy()
-  stopFaceToFaceConnectHeartbeat()
 })
 
 </script>
@@ -609,25 +546,31 @@ onBeforeUnmount(() => {
     font-size: 18px;
   }
 }
-.face-to-face-connect-section {
-  margin-top: 16px;
-  .row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
   .title {
     font-size: 16px;
     font-weight: 500;
   }
+}
+.face-to-face-connect-section {
+  margin-top: 16px;
   .status {
     font-size: 12px;
     opacity: 0.6;
-    &.enabled {
+    &.running {
       color: #2d8a2d;
       opacity: 1;
     }
+  }
+  .description {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 4px;
   }
 }
 
