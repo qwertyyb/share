@@ -2,6 +2,9 @@ export default {
   app: {
     title: 'Share',
   },
+  faceToFaceConnect: {
+    title: 'Face to face connect',
+  },
   action: {
     start: 'Start',
     connect: 'Connect',
@@ -26,6 +29,8 @@ export default {
     connecting: 'Connecting',
     connected: 'Connected',
     disconnected: 'Disconnected',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
   },
   linkType: {
     direct: 'Direct',
@@ -41,6 +46,9 @@ export default {
     connectionTimeout: 'Connection timed out',
     copySuccess: '✅ Copied!',
     copyFailed: '❌ Copy failed',
+    faceToFaceLookupFailed: 'Face to face connection failed',
+    getLocationFailed: 'Get location failed',
+    cannotConnectToSelf: 'Cannot connect to yourself',
   },
   footer: {
     githubRepo: 'GitHub repository',

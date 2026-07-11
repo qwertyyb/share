@@ -90,6 +90,7 @@ watchEffect(async () => {
     outline: none;
     font-size: 14px;
     padding-inline: 8px;
+    width: 100px;
   }
   .qrcode-btn {
     width: 42px;

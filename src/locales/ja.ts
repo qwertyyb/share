@@ -2,6 +2,9 @@ export default {
   app: {
     title: 'Share',
   },
+  faceToFaceConnect: {
+    title: '面対面接続',
+  },
   action: {
     start: '開始',
     connect: '接続',
@@ -26,6 +29,8 @@ export default {
     connecting: '接続中',
     connected: '接続済み',
     disconnected: '切断済み',
+    enabled: '有効',
+    disabled: '無効',
   },
   linkType: {
     direct: '直接接続',
@@ -41,6 +46,9 @@ export default {
     connectionTimeout: '接続がタイムアウトしました',
     copySuccess: '✅ コピーしました',
     copyFailed: '❌ コピーに失敗しました',
+    faceToFaceLookupFailed: '面対面接続に失敗しました',
+    getLocationFailed: '位置情報の取得に失敗しました',
+    cannotConnectToSelf: '自分自身に接続できません',
   },
   footer: {
     githubRepo: 'GitHub リポジトリ',

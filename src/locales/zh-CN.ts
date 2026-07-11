@@ -2,6 +2,9 @@ export default {
   app: {
     title: 'Share',
   },
+  faceToFaceConnect: {
+    title: '面对面连接',
+  },
   action: {
     start: '开始',
     connect: '连接',
@@ -26,6 +29,8 @@ export default {
     connecting: '连接中',
     connected: '已连接',
     disconnected: '已断开',
+    enabled: '已启用',
+    disabled: '未启用',
   },
   linkType: {
     direct: '直连',
@@ -41,6 +46,9 @@ export default {
     connectionTimeout: '连接超时',
     copySuccess: '✅ 复制成功！',
     copyFailed: '❌ 复制失败',
+    faceToFaceLookupFailed: '面对面连接失败',
+    getLocationFailed: '获取位置失败',
+    cannotConnectToSelf: '不能连接到自己',
   },
   footer: {
     githubRepo: 'GitHub 仓库',

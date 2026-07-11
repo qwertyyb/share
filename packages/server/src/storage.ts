@@ -17,7 +17,7 @@ type Candidate = {
 const storageMap = new Map<string, Candidate[]>()
 
 // 每2秒清理一次过期的候选，过期时间定为10秒
-setTimeout(() => {
+setInterval(() => {
   for (const [cell, candidates] of storageMap.entries()) {
     const now = Date.now()
     // 保留5分钟内的候选

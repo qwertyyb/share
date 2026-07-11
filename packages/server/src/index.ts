@@ -25,7 +25,7 @@ app.get('/api/v1/lookup', async (c) => {
   candidates = candidates.filter((candidate) => candidate.peerId !== peerId)
 
   storage.addCandidate({ peerId, lat, lng, code })
-  return c.json({ code: 200, data: { peers: candidates.map(item => item.peerId) } })
+  return c.json({ code: 200, data: { peers: candidates.map(item => ({ peerId: item.peerId, updatedAt: item.updatedAt })) } })
 })
 
 serve({ fetch: app.fetch, port: 3001 }, (info) => {
