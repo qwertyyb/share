@@ -722,6 +722,7 @@ h1 {
       .message-item-action-list {
         margin-top: 4px;
         display: flex;
+        list-style: none;
       }
       .copy-text-action {
         height: 28px;
