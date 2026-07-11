@@ -1,46 +1,53 @@
 <template>
-  <div class="home-view">
-    <h1>{{ t('app.title') }}</h1>
+  <section class="home-view">
+    <header class="view-header">
+      <button class="btn menu-btn" v-if="status === 'connected' && remotes.length" @click="toggleMenuOpened()">
+        <MaterialIcon name="menu" class="menu-icon" style="font-weight: 900;" />
+      </button>
+      <h1>{{ t('app.title') }}</h1>
+    </header>
     <button class="btn start-btn" @click="start" v-if="status === 'default' || status === 'connecting'">
       <MaterialIcon name="progress_activity" class="loading-icon" v-if="status === 'connecting'" />
       {{ t('action.start') }}
     </button>
-    <template v-if="status === 'connected'">
-      <LocalPeerInfo :peer-id="state.peerId" @stop="stop" />
-      <div class="connect-other input-row">
-        <input type="text" class="other-peer-id-content text-input" v-model.trim="connectForm.peerId" :placeholder="t('placeholder.peerId')">
-        <button class="btn connect-btn"
-          @click="connect(connectForm.peerId)"
-          :disabled="!connectForm.peerId || connectForm.peerId === state.peerId"
-        >{{ t('action.connect') }}</button>
-      </div>
-      <div class="face-to-face-connect-section">
-        <div class="row">
-         <h3 class="title">{{ t('faceToFaceConnect.title') }}</h3>
-         <p class="status" :class="{ enabled: state.faceToFaceEnabled }">{{ state.faceToFaceEnabled ? t('status.enabled') : t('status.disabled') }}</p>
+    <main class="view-main" v-if="status === 'connected'">
+      <section class="menu-section" v-show="menuOpened">
+        <LocalPeerInfo :peer-id="state.peerId" @stop="stop" />
+        <div class="connect-other input-row">
+          <input type="text" class="other-peer-id-content text-input" v-model.trim="connectForm.peerId" :placeholder="t('placeholder.peerId')">
+          <button class="btn connect-btn"
+            @click="connect(connectForm.peerId)"
+            :disabled="!connectForm.peerId || connectForm.peerId === state.peerId"
+          >{{ t('action.connect') }}</button>
         </div>
-        <div class="code-connect input-row" v-if="state.faceToFaceServiceEnabled">
-          <input type="text" class="code-connect-input text-input"
-            v-model.trim="connectForm.code"
-            :disabled="state.faceToFaceEnabled"
-            :placeholder="t('placeholder.faceToFaceConnectPlaceholder')"
-          >
-          <button class="btn code-connect-btn" @click="startFaceToFaceConnect" v-if="!state.faceToFaceEnabled" :disabled="!connectForm.code">{{ t('action.connect') }}</button>
-          <button class="btn code-connect-btn danger-btn" @click="stopFaceToFaceConnect" v-else>{{ t('action.stop') }}</button>
+        <div class="face-to-face-connect-section">
+          <div class="row">
+          <h3 class="title">{{ t('faceToFaceConnect.title') }}</h3>
+          <p class="status" :class="{ enabled: state.faceToFaceEnabled }">{{ state.faceToFaceEnabled ? t('status.enabled') : t('status.disabled') }}</p>
+          </div>
+          <div class="code-connect input-row" v-if="state.faceToFaceServiceEnabled">
+            <input type="text" class="code-connect-input text-input"
+              v-model.trim="connectForm.code"
+              :disabled="state.faceToFaceEnabled"
+              :placeholder="t('placeholder.faceToFaceConnectPlaceholder')"
+            >
+            <button class="btn code-connect-btn" @click="startFaceToFaceConnect" v-if="!state.faceToFaceEnabled" :disabled="!connectForm.code">{{ t('action.connect') }}</button>
+            <button class="btn code-connect-btn danger-btn" @click="stopFaceToFaceConnect" v-else>{{ t('action.stop') }}</button>
+          </div>
         </div>
-      </div>
-      <div class="card" v-if="remotes.length > 1">
-        <div class="card-header">
-          <h3 class="card-title">{{ t('device.list') }}</h3>
+        <div class="card devices-card">
+          <div class="card-header">
+            <h3 class="card-title">{{ t('device.list') }}</h3>
+          </div>
+          <div class="card-body">
+            <RemotePeerList
+              :remotes="remotes"
+              :selected-connection="selectedConnection"
+              @select="selectedConnection = $event"
+            />
+          </div>
         </div>
-        <div class="card-body">
-          <RemotePeerList
-            :remotes="remotes"
-            :selected-connection="selectedConnection"
-            @select="selectedConnection = $event"
-          />
-        </div>
-      </div>
+      </section>
       <div class="card send-section" v-if="selectedConnection">
         <div class="card-header">
           <h3 class="card-title">{{ selectedConnection.connection.peer }}</h3>
@@ -97,8 +104,8 @@
           </div>
         </div>
       </div>
-    </template>
-  </div>
+    </main>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -112,6 +119,7 @@ import { UAParser } from 'ua-parser-js'
 import { detectLinkType, formatSize, showToast, type LinkType } from '@/utils'
 import ClipboardJS from 'clipboard'
 import { checkHealth, lookup } from '@/services'
+import { useToggle } from '@vueuse/core'
 
 const { t } = useI18n()
 
@@ -121,6 +129,8 @@ const ICE_SERVERS = [
   { urls: "turn:coturn.qwertyyb.cn:3478", username: "qwertyyb", credential: "860af5a1974747f89b79584c4afcdcd9" },
   { urls: "turn:coturn.qwertyyb.cn:3478?transport=tcp", username: "qwertyyb", credential: "860af5a1974747f89b79584c4afcdcd9" },
 ]
+
+const [menuOpened, toggleMenuOpened] = useToggle(true)
 
 const connectForm = ref({ peerId: new URL(location.href).searchParams.get('peerId') || '', code: new URL(location.href).searchParams.get('code') || '' })
 const sendForm = ref({ text: '' })
@@ -511,17 +521,43 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .home-view {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 16px;
+  padding: 0 16px;
 }
 
-h1 {
-  text-align: center;
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16px;
+  position: relative;
+  .menu-btn {
+    height: 30px;
+    width: 30px;
+    padding: 0;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  h1 {
+    text-align: center;
+  }
+}
+
+.view-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.menu-section {
+  flex: 1;
+  min-width: 350px;
 }
 
 @keyframes rotation {
@@ -596,9 +632,10 @@ h1 {
 }
 
 .card {
-  margin: 16px 0;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
   .card-header {
     padding: 8px 16px;
     border-bottom: 1px solid var(--border-color);
@@ -615,6 +652,9 @@ h1 {
   .card-body {
     padding: 16px;
   }
+}
+.devices-card {
+  margin-top: 16px;
 }
 .remote-list {
   list-style: none;
@@ -649,6 +689,8 @@ h1 {
 }
 
 .send-section {
+  flex: 1;
+  min-width: 350px;
   .card-body {
     display: flex;
     flex-direction: column;
@@ -788,6 +830,44 @@ h1 {
   box-shadow: 0 6px 10px #999;
   border-radius: var(--border-radius);
   animation: slideDown 2.4s both;
+}
+
+@media (min-width: 640px) {
+  .view-main {
+    flex: 1;
+  }
+  .menu-section {
+    min-width: initial;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .devices-card {
+    flex: 1;
+    .card-body {
+      flex: 1;
+      padding: 0;
+      overflow: auto;
+      height: 0;
+    }
+    .remote-peer-list {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+  .send-section {
+    flex: 3;
+    min-width: initial;
+    display: flex;
+    flex-direction: column;
+    .card-body {
+      flex: 1;
+      .messages-area {
+        flex: 1;
+      }
+    }
+  }
 }
 
 </style>

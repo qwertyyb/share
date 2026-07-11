@@ -46,6 +46,8 @@ defineEmits<{
 .remote-list {
   list-style: none;
   padding: 0;
+  display: flex;
+  flex-direction: column;
   .remote-item {
     display: flex;
     align-items: center;
@@ -73,5 +75,6 @@ defineEmits<{
 .empty-list {
   opacity: 0.4;
   text-align: center;
+  margin: auto;
 }
 </style>

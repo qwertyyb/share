@@ -72,7 +72,7 @@ input, textarea {
   outline: none;
   background-color: var(--default-btn-bg-color);
   transition: background-color .2s;
-  padding: 6px 12px;
+  padding: 0 12px;
   height: 36px;
   box-sizing: border-box;
   border-radius: var(--border-radius);

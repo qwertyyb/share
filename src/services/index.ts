@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.DEV ? 'http://localhost:3001/api/v1' : 'https://share.qwertyyb.cn/api/v1'
+const BASE_URL = import.meta.env.DEV && false ? 'http://localhost:3001/api/v1' : 'https://share.qwertyyb.cn/api/v1'
 
 export const lookup = async (options: { peerId: string, code: string, lat: number, lng: number }): Promise<{ peerId: string, updatedAt: number }[]> => {
   const url = new URL(`${BASE_URL}/lookup`)

@@ -6,6 +6,7 @@ import download2 from '@material-symbols/svg-400/outlined/download_2.svg?raw'
 import draft from '@material-symbols/svg-400/outlined/draft.svg?raw'
 import progressActivity from '@material-symbols/svg-400/outlined/progress_activity.svg?raw'
 import qrCode from '@material-symbols/svg-400/outlined/qr_code.svg?raw'
+import menu from '@material-symbols/svg-400/outlined/menu.svg?raw'
 import send from '@material-symbols/svg-400/outlined/send.svg?raw'
 
 const icons = {
@@ -15,6 +16,7 @@ const icons = {
   draft,
   progress_activity: progressActivity,
   qr_code: qrCode,
+  menu,
   send,
 } as const
 
