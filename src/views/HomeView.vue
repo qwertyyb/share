@@ -11,7 +11,7 @@
         <input type="text" class="other-peer-id-content text-input" v-model.trim="connectForm.peerId" :placeholder="t('placeholder.peerId')">
         <button class="btn connect-btn" @click="connect(connectForm.peerId)" :disabled="!connectForm.peerId">{{ t('action.connect') }}</button>
       </div>
-      <div class="code-connect input-row">
+      <div class="code-connect input-row" v-if="state.faceToFaceServiceEnabled">
         <p>面对面连接码：</p>
         <input type="text" class="code-connect-input text-input"
           v-model.trim="connectForm.code"
@@ -103,7 +103,7 @@ import { useI18n } from 'vue-i18n'
 import { UAParser } from 'ua-parser-js'
 import { detectLinkType, formatSize, showToast, type LinkType } from '@/utils'
 import ClipboardJS from 'clipboard'
-import { lookup } from '@/services'
+import { checkHealth, lookup } from '@/services'
 
 const { t } = useI18n()
 
@@ -129,6 +129,7 @@ const selectedMessages = computed(() => {
 const status = ref<'default' | 'connecting' | 'connected'>('default')
 const state = ref({
   peerId: '',
+  faceToFaceServiceEnabled: false,
   faceToFaceConnectCode: '',
   faceToFaceEnabled: false,
 })
@@ -349,8 +350,12 @@ const initDataConnection = (dataConnection: DataConnection) => {
   })
 }
 
+const isPeerConnected = (peerId: string) => {
+  return remotes.value.some(item => item.connection.peer === peerId && ['connecting', 'connected'].includes(item.status))
+}
+
 const connect = (peerId: string) => {
-  if (remotes.value.some(item => item.connection.peer === peerId && ['connecting', 'connected'].includes(item.status))) {
+  if (isPeerConnected(peerId)) {
     console.warn('connect already exists', peerId)
     return
   }
@@ -362,7 +367,7 @@ const connect = (peerId: string) => {
       return { ...item, status: 'disconnected', info: '' }
     }
     return item
-  }).filter(item => item.status !== 'disconnected' || item.connection.peer !== peerId)
+  })
   const ua = UAParser(navigator.userAgent)
   const title = [ua.device, ua.os, ua.browser].join(' ')
   console.warn('连接', peerId)
@@ -378,18 +383,17 @@ const connect = (peerId: string) => {
   initDataConnection(dataConnection)
 }
 
-let interval: ReturnType<typeof setInterval> | undefined
+let interval: ReturnType<typeof setTimeout> | undefined
 
 const startFaceToFaceConnectHeartbeat = async (location: { lat: number, lng: number }) => {
-  try {
-    const peerId = await lookup({ peerId: state.value.peerId, code: connectForm.value.code, lat: location.lat, lng: location.lng })
-    if (peerId) {
-      connect(peerId)
-    }
-  } catch (err) {
-    console.error('startFaceToFaceConnectHeartbeat error', err)
-  }
-  interval =setTimeout(startFaceToFaceConnectHeartbeat, 10 * 1000, location)
+  const peers = await lookup({ peerId: state.value.peerId, code: connectForm.value.code, lat: location.lat, lng: location.lng }).catch(err => {
+    showToast(`${t('toast.faceToFaceLookupFailed')}: ${err instanceof Error ? err.message : String(err)}`)
+    throw err;
+  })
+  peers.forEach(peerId => {
+    connect(peerId)
+  })
+  interval =setTimeout(startFaceToFaceConnectHeartbeat, 2 * 1000, location)
 }
 
 const stopFaceToFaceConnectHeartbeat = () => {
@@ -467,6 +471,9 @@ onMounted(() => {
   })
   clipboard.on('success', () => {
     showToast(t('toast.copySuccess'))
+  })
+  checkHealth().then(enabled => {
+    state.value.faceToFaceServiceEnabled = enabled
   })
 })
 

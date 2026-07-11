@@ -1,0 +1,38 @@
+FROM node:22-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
+
+FROM base AS builder
+
+RUN apk add --no-cache gcompat
+WORKDIR /app
+
+COPY packages/server/package.json packages/server/tsconfig.json ./
+RUN pnpm install
+
+COPY packages/server/src ./src
+RUN pnpm run build
+
+FROM base AS prod-deps
+
+WORKDIR /app
+
+COPY packages/server/package.json ./
+RUN pnpm install --prod
+
+FROM base AS runner
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 hono
+
+COPY --from=prod-deps --chown=hono:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=hono:nodejs /app/dist ./dist
+COPY --from=builder --chown=hono:nodejs /app/package.json ./package.json
+
+USER hono
+EXPOSE 3001
+
+CMD ["node", "dist/index.mjs"]
